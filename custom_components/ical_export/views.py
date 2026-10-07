@@ -33,6 +33,11 @@ from .ics import IcsEvent, build_calendar
 _LOGGER = logging.getLogger(__name__)
 
 ALL_FEED = "all"
+RETRY_AFTER_SECONDS = 60
+
+
+class FeedUnavailableError(Exception):
+    """A calendar could not be read and there is no earlier copy to serve."""
 
 
 def _find_entry(hass: HomeAssistant, token: str) -> ConfigEntry | None:
@@ -52,19 +57,22 @@ def _calendars(entry: ConfigEntry) -> list[str]:
     return entry.options.get(CONF_CALENDARS, entry.data.get(CONF_CALENDARS, []))
 
 
-async def _fetch(hass: HomeAssistant, entry: ConfigEntry, entity_id: str) -> list[IcsEvent]:
+async def _fetch(
+    hass: HomeAssistant, entry: ConfigEntry, entity_id: str
+) -> list[IcsEvent] | None:
+    """Return the events, or None when the calendar could not be read."""
     entity: CalendarEntity | None = hass.data[DATA_COMPONENT].get_entity(entity_id)
     if entity is None:
         _LOGGER.warning("Calendar %s not available", entity_id)
-        return []
+        return None
     now = dt_util.now()
     start = now - timedelta(days=_option(entry, CONF_PAST_DAYS, DEFAULT_PAST_DAYS))
     end = now + timedelta(days=_option(entry, CONF_FUTURE_DAYS, DEFAULT_FUTURE_DAYS))
     try:
         events = await entity.async_get_events(hass, start, end)
-    except Exception:  # noqa: BLE001 - one broken provider must not kill the feed
+    except Exception:  # noqa: BLE001 - a broken provider must not crash the view
         _LOGGER.exception("Failed to fetch events from %s", entity_id)
-        return []
+        return None
     return [
         IcsEvent(
             start=e.start,
@@ -101,6 +109,12 @@ async def _render(hass: HomeAssistant, entry: ConfigEntry, feed: str) -> tuple[s
         return cached[1], cached[2]
 
     results = await asyncio.gather(*(_fetch(hass, entry, e) for e in entity_ids))
+    if any(chunk is None for chunk in results):
+        # An empty or partial feed would make subscribers delete their events, so
+        # serve the last good copy (even if expired) or fail instead.
+        if cached:
+            return cached[1], cached[2]
+        raise FeedUnavailableError
     events = [event for chunk in results for event in chunk]
     body = build_calendar(title, events, REFRESH_MINUTES)
     etag = f'"{hashlib.sha256(_stable(body).encode()).hexdigest()[:32]}"'
@@ -126,7 +140,10 @@ class ICalFeedView(HomeAssistantView):
         entry = _find_entry(hass, token)
         if entry is None:
             return web.Response(status=404)
-        rendered = await _render(hass, entry, name)
+        try:
+            rendered = await _render(hass, entry, name)
+        except FeedUnavailableError:
+            return web.Response(status=503, headers={"Retry-After": str(RETRY_AFTER_SECONDS)})
         if rendered is None:
             return web.Response(status=404)
         body, etag = rendered

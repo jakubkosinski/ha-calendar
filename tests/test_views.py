@@ -86,7 +86,7 @@ async def test_feed_ok_404_and_etag(
     assert entry.state is ConfigEntryState.LOADED
 
 
-async def test_failing_calendar_does_not_break_feed(
+async def test_failing_calendar_without_cache_returns_503(
     hass: HomeAssistant, hass_client_no_auth: ClientSessionGenerator
 ):
     await _setup(hass)
@@ -94,8 +94,31 @@ async def test_failing_calendar_does_not_break_feed(
     entity = hass.data[DATA_COMPONENT].get_entity("calendar.demo")
     with patch.object(type(entity), "async_get_events", side_effect=RuntimeError("boom")):
         resp = await client.get(f"/api/ical_export/{TOKEN}/all.ics")
+    assert resp.status == 503
+    assert "Retry-After" in resp.headers
+
+
+async def test_failing_calendar_serves_stale_copy(
+    hass: HomeAssistant, hass_client_no_auth: ClientSessionGenerator
+):
+    await _setup(hass)
+    client = await hass_client_no_auth()
+    entity = hass.data[DATA_COMPONENT].get_entity("calendar.demo")
+    url = f"/api/ical_export/{TOKEN}/all.ics"
+    with patch.object(type(entity), "async_get_events", return_value=[_event()]):
+        good = await client.get(url)
+    assert good.status == 200
+    good_body, good_etag = await good.text(), good.headers["ETag"]
+
+    # Expire the cache, then break the provider.
+    cache = hass.data[DOMAIN]["cache"]
+    for key, (_, body, etag) in list(cache.items()):
+        cache[key] = (-1e9, body, etag)
+    with patch.object(type(entity), "async_get_events", side_effect=RuntimeError("boom")):
+        resp = await client.get(url)
     assert resp.status == 200
-    assert "BEGIN:VCALENDAR" in await resp.text()
+    assert resp.headers["ETag"] == good_etag
+    assert await resp.text() == good_body
 
 
 async def test_token_rotation_invalidates_old_url(
