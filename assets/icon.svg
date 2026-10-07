@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f2f2f4"/>
+    </linearGradient>
+    <linearGradient id="hdr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff5f57"/>
+      <stop offset="1" stop-color="#ff3b30"/>
+    </linearGradient>
+    <clipPath id="clip"><rect x="32" y="32" width="448" height="448" rx="100"/></clipPath>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="url(#bg)"/>
+  <g clip-path="url(#clip)">
+    <rect x="32" y="32" width="448" height="128" fill="url(#hdr)"/>
+  </g>
+  <text x="256" y="120" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700" font-size="58" letter-spacing="6" fill="#ffffff">WED</text>
+  <text x="256" y="380" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="300" font-size="220" fill="#1c1c1e">17</text>
+  <rect x="32" y="32" width="448" height="448" rx="100" fill="none" stroke="#000" stroke-opacity="0.08" stroke-width="2"/>
+</svg>
