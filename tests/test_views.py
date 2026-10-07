@@ -101,7 +101,7 @@ async def test_failing_calendar_without_cache_returns_503(
 async def test_failing_calendar_serves_stale_copy(
     hass: HomeAssistant, hass_client_no_auth: ClientSessionGenerator
 ):
-    await _setup(hass)
+    entry = await _setup(hass)
     client = await hass_client_no_auth()
     entity = hass.data[DATA_COMPONENT].get_entity("calendar.demo")
     url = f"/api/ical_export/{TOKEN}/all.ics"
@@ -111,7 +111,7 @@ async def test_failing_calendar_serves_stale_copy(
     good_body, good_etag = await good.text(), good.headers["ETag"]
 
     # Expire the cache, then break the provider.
-    cache = hass.data[DOMAIN]["cache"]
+    cache = entry.runtime_data.cache
     for key, (_, body, etag) in list(cache.items()):
         cache[key] = (-1e9, body, etag)
     with patch.object(type(entity), "async_get_events", side_effect=RuntimeError("boom")):

@@ -29,6 +29,7 @@ from .const import (
     REFRESH_MINUTES,
 )
 from .ics import IcsEvent, build_calendar
+from .runtime import ICalConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class FeedUnavailableError(Exception):
     """A calendar could not be read and there is no earlier copy to serve."""
 
 
-def _find_entry(hass: HomeAssistant, token: str) -> ConfigEntry | None:
+def _find_entry(hass: HomeAssistant, token: str) -> ICalConfigEntry | None:
     """Find the loaded entry matching token, in constant time per entry."""
     match = None
     for entry in hass.config_entries.async_loaded_entries(DOMAIN):
@@ -88,7 +89,7 @@ async def _fetch(
     ]
 
 
-async def _render(hass: HomeAssistant, entry: ConfigEntry, feed: str) -> tuple[str, str] | None:
+async def _render(hass: HomeAssistant, entry: ICalConfigEntry, feed: str) -> tuple[str, str] | None:
     """Return (body, etag) for a feed, or None if the feed doesn't exist."""
     calendars = _calendars(entry)
     if feed == ALL_FEED:
@@ -102,9 +103,8 @@ async def _render(hass: HomeAssistant, entry: ConfigEntry, feed: str) -> tuple[s
         state = hass.states.get(entity_id)
         title = state.name if state else entity_id
 
-    cache: dict = hass.data[DOMAIN]["cache"]
-    key = (entry.entry_id, feed)
-    cached = cache.get(key)
+    cache = entry.runtime_data.cache
+    cached = cache.get(feed)
     if cached and time.monotonic() - cached[0] < CACHE_TTL_SECONDS:
         return cached[1], cached[2]
 
@@ -118,7 +118,7 @@ async def _render(hass: HomeAssistant, entry: ConfigEntry, feed: str) -> tuple[s
     events = [event for chunk in results for event in chunk]
     body = build_calendar(title, events, REFRESH_MINUTES)
     etag = f'"{hashlib.sha256(_stable(body).encode()).hexdigest()[:32]}"'
-    cache[key] = (time.monotonic(), body, etag)
+    cache[feed] = (time.monotonic(), body, etag)
     return body, etag
 
 

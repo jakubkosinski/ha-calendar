@@ -11,6 +11,7 @@ from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.typing import ConfigType
 
 from .const import CONF_CALENDARS, CONF_TOKEN, DOMAIN
+from .runtime import FeedRuntime, ICalConfigEntry
 from .views import ALL_FEED, ICalFeedView
 
 CONF_ANNOUNCED = "announced"
@@ -18,7 +19,6 @@ CONF_ANNOUNCED = "announced"
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the HTTP view once."""
-    hass.data.setdefault(DOMAIN, {"cache": {}})
     hass.http.register_view(ICalFeedView())
     return True
 
@@ -65,8 +65,9 @@ def _remove_legacy_button(hass: HomeAssistant, entry: ConfigEntry) -> None:
         dev_reg.async_remove_device(device.id)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ICalConfigEntry) -> bool:
     """Set up a feed."""
+    entry.runtime_data = FeedRuntime()
     _remove_legacy_button(hass, entry)
     if not entry.data.get(CONF_ANNOUNCED):
         _announce(hass, entry)
@@ -80,11 +81,8 @@ async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a feed."""
-    cache = hass.data[DOMAIN]["cache"]
-    for key in [k for k in cache if k[0] == entry.entry_id]:
-        del cache[key]
+async def async_unload_entry(hass: HomeAssistant, entry: ICalConfigEntry) -> bool:
+    """Unload a feed; its runtime data (cache) goes away with it."""
     return True
 
 
