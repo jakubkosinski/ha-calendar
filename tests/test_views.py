@@ -6,6 +6,7 @@ from unittest.mock import patch
 from homeassistant.components.calendar import DATA_COMPONENT, CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -216,3 +217,28 @@ async def test_concurrent_requests_share_one_refresh(
         )
     assert [r.status for r in responses] == [200] * 5
     assert calls == 1
+
+
+async def test_v1_entry_is_migrated_and_urls_keep_working(hass: HomeAssistant):
+    entry = await _setup(hass)
+    assert entry.version == 2
+    (calendar,) = entry.data[CONF_CALENDARS]
+    registry_entry = er.async_get(hass).async_get("calendar.demo")
+    assert calendar == {"slug": "demo", "ref": registry_entry.id}
+
+
+async def test_feed_survives_entity_rename(
+    hass: HomeAssistant, hass_client_no_auth: ClientSessionGenerator
+):
+    await _setup(hass)
+    client = await hass_client_no_auth()
+    er.async_get(hass).async_update_entity("calendar.demo", new_entity_id="calendar.renamed")
+    await hass.async_block_till_done()
+    entity = hass.data[DATA_COMPONENT].get_entity("calendar.renamed")
+    assert entity is not None
+
+    with patch.object(type(entity), "async_get_events", return_value=[_event("Renamed")]):
+        resp = await client.get(f"/api/ical_export/{TOKEN}/demo.ics")
+        assert resp.status == 200
+        assert "SUMMARY:Renamed" in await resp.text()
+        assert (await client.get(f"/api/ical_export/{TOKEN}/all.ics")).status == 200

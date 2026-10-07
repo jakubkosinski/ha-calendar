@@ -10,6 +10,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.typing import ConfigType
 
+from .calendars import CONF_SLUG, get_calendars, migrate_calendars
 from .const import CONF_CALENDARS, CONF_TOKEN, DOMAIN
 from .runtime import FeedRuntime, ICalConfigEntry
 from .views import ALL_FEED, ICalFeedView
@@ -30,11 +31,10 @@ def feed_urls(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, str]:
     except NoURLAvailableError:
         base = "http://<home-assistant-host>:8123"
     prefix = f"{base}/api/{DOMAIN}/{entry.data[CONF_TOKEN]}"
-    calendars = entry.options.get(CONF_CALENDARS, entry.data[CONF_CALENDARS])
     urls = {ALL_FEED: f"{prefix}/{ALL_FEED}.ics"}
-    for entity_id in calendars:
-        object_id = entity_id.split(".", 1)[1]
-        urls[object_id] = f"{prefix}/{object_id}.ics"
+    for calendar in get_calendars(entry):
+        slug = calendar[CONF_SLUG]
+        urls[slug] = f"{prefix}/{slug}.ics"
     return urls
 
 
@@ -63,6 +63,17 @@ def _remove_legacy_button(hass: HomeAssistant, entry: ConfigEntry) -> None:
     dev_reg = dr.async_get(hass)
     for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
         dev_reg.async_remove_device(device.id)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """v1 stored entity_ids; v2 stores registry ids with a stable URL slug."""
+    if entry.version == 1:
+        data = {**entry.data, CONF_CALENDARS: migrate_calendars(hass, entry.data[CONF_CALENDARS])}
+        options = dict(entry.options)
+        if CONF_CALENDARS in options:
+            options[CONF_CALENDARS] = migrate_calendars(hass, options[CONF_CALENDARS])
+        hass.config_entries.async_update_entry(entry, data=data, options=options, version=2)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ICalConfigEntry) -> bool:

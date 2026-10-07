@@ -16,6 +16,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from . import feed_urls, webcal_url
+from .calendars import build_calendars, entity_ids, get_calendars
 from .const import (
     CONF_CALENDARS,
     CONF_FUTURE_DAYS,
@@ -49,7 +50,7 @@ def _days(minimum: int, maximum: int) -> selector.NumberSelector:
 class ICalExportConfigFlow(ConfigFlow, domain=DOMAIN):
     """Create a feed."""
 
-    VERSION = 1
+    VERSION = 2
 
     @staticmethod
     @callback
@@ -66,7 +67,7 @@ class ICalExportConfigFlow(ConfigFlow, domain=DOMAIN):
                     title=user_input[CONF_NAME],
                     data={
                         CONF_NAME: user_input[CONF_NAME],
-                        CONF_CALENDARS: user_input[CONF_CALENDARS],
+                        CONF_CALENDARS: build_calendars(self.hass, user_input[CONF_CALENDARS]),
                         CONF_TOKEN: secrets.token_urlsafe(32),
                     },
                 )
@@ -99,7 +100,9 @@ class ICalExportOptionsFlow(OptionsFlow):
             else:
                 return self.async_create_entry(
                     data={
-                        CONF_CALENDARS: user_input[CONF_CALENDARS],
+                        CONF_CALENDARS: build_calendars(
+                            self.hass, user_input[CONF_CALENDARS], get_calendars(entry)
+                        ),
                         CONF_PAST_DAYS: int(user_input[CONF_PAST_DAYS]),
                         CONF_FUTURE_DAYS: int(user_input[CONF_FUTURE_DAYS]),
                     }
@@ -109,7 +112,9 @@ class ICalExportOptionsFlow(OptionsFlow):
             step_id="settings",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_CALENDARS, default=current[CONF_CALENDARS]): _CALENDARS,
+                    vol.Required(
+                        CONF_CALENDARS, default=entity_ids(self.hass, entry)
+                    ): _CALENDARS,
                     vol.Required(
                         CONF_PAST_DAYS,
                         default=current.get(CONF_PAST_DAYS, DEFAULT_PAST_DAYS),

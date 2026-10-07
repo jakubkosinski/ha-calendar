@@ -16,9 +16,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
+from .calendars import CONF_REF, CONF_SLUG, entity_ids, get_calendars, resolve_entity_id
 from .const import (
     CACHE_TTL_SECONDS,
-    CONF_CALENDARS,
     CONF_FUTURE_DAYS,
     CONF_NAME,
     CONF_PAST_DAYS,
@@ -54,10 +54,6 @@ def _option(entry: ConfigEntry, key: str, default: int) -> int:
     return int(entry.options.get(key, default))
 
 
-def _calendars(entry: ConfigEntry) -> list[str]:
-    return entry.options.get(CONF_CALENDARS, entry.data.get(CONF_CALENDARS, []))
-
-
 async def _fetch(
     hass: HomeAssistant, entry: ConfigEntry, entity_id: str
 ) -> list[IcsEvent] | None:
@@ -91,15 +87,15 @@ async def _fetch(
 
 async def _render(hass: HomeAssistant, entry: ICalConfigEntry, feed: str) -> tuple[str, str] | None:
     """Return (body, etag) for a feed, or None if the feed doesn't exist."""
-    calendars = _calendars(entry)
     if feed == ALL_FEED:
-        entity_ids = calendars
+        feed_entities = entity_ids(hass, entry)
         title = entry.data[CONF_NAME]
     else:
-        entity_id = f"calendar.{feed}"
-        if entity_id not in calendars:
+        calendar = next((c for c in get_calendars(entry) if c[CONF_SLUG] == feed), None)
+        if calendar is None:
             return None
-        entity_ids = [entity_id]
+        entity_id = resolve_entity_id(hass, calendar[CONF_REF])
+        feed_entities = [entity_id]
         state = hass.states.get(entity_id)
         title = state.name if state else entity_id
 
@@ -110,7 +106,7 @@ async def _render(hass: HomeAssistant, entry: ICalConfigEntry, feed: str) -> tup
         if cached and time.monotonic() - cached[0] < CACHE_TTL_SECONDS:
             return cached[1], cached[2]
 
-        results = await asyncio.gather(*(_fetch(hass, entry, e) for e in entity_ids))
+        results = await asyncio.gather(*(_fetch(hass, entry, e) for e in feed_entities))
         if any(chunk is None for chunk in results):
             # An empty or partial feed would make subscribers delete their events, so
             # serve the last good copy (even if expired) or fail instead.
