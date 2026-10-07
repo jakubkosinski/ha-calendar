@@ -80,6 +80,16 @@ async def test_feed_ok_404_and_etag(
         )
         assert resp.status == 304
 
+        for header in (f'W/{etag}', f'"other", {etag}', "*"):
+            resp = await client.get(
+                f"/api/ical_export/{TOKEN}/all.ics", headers={"If-None-Match": header}
+            )
+            assert resp.status == 304, header
+        resp = await client.get(
+            f"/api/ical_export/{TOKEN}/all.ics", headers={"If-None-Match": '"other"'}
+        )
+        assert resp.status == 200
+
         resp = await client.get(f"/api/ical_export/{TOKEN}/demo.ics")
         assert resp.status == 200
 

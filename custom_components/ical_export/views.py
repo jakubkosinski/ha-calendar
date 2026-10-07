@@ -120,6 +120,15 @@ async def _render(hass: HomeAssistant, entry: ICalConfigEntry, feed: str) -> tup
         return body, etag
 
 
+def _etag_matches(header: str | None, etag: str) -> bool:
+    """RFC 9110 weak comparison of an If-None-Match header against our ETag."""
+    if not header:
+        return False
+    if header.strip() == "*":
+        return True
+    return any(tag.strip().removeprefix("W/") == etag for tag in header.split(","))
+
+
 def _stable(body: str) -> str:
     """Drop DTSTAMP lines so the ETag only changes with real content."""
     return "\n".join(ln for ln in body.split("\r\n") if not ln.startswith("DTSTAMP"))
@@ -149,7 +158,7 @@ class ICalFeedView(HomeAssistantView):
             "ETag": etag,
             "Cache-Control": f"private, max-age={CACHE_TTL_SECONDS}",
         }
-        if request.headers.get("If-None-Match") == etag:
+        if _etag_matches(request.headers.get("If-None-Match"), etag):
             return web.Response(status=304, headers=headers)
         headers["Content-Disposition"] = f'inline; filename="{name}.ics"'
         return web.Response(
