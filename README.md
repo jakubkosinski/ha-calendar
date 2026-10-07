@@ -15,9 +15,9 @@ Apple Calendar can't send HA's `Authorization: Bearer` header, so feeds are prot
 
 ## Configure
 
-*Settings → Devices & services → Add integration → iCal Export.* Pick a feed name and the calendars to include. You can add several feeds. Under *Configure* you can change the calendars and the time window (default: 30 days back, 365 ahead).
+*Settings → Devices & services → Add integration → iCal Export.* Pick a feed name and the calendars to include. You can add several feeds. Under *Configure → Calendars and time window* you can change the calendars and the time window (default: 30 days back, 365 ahead).
 
-A persistent notification lists the URLs:
+The feed URLs contain the secret token, so they are not put in a notification (every HA user would see it). Open *Configure → Show feed URLs* (admins only) to get them:
 
 - `/api/ical_export/<token>/all.ics` – all selected calendars combined
 - `/api/ical_export/<token>/<calendar_object_id>.ics` – a single calendar
@@ -33,7 +33,7 @@ Your HA must be reachable from the device (Nabu Casa, reverse proxy with HTTPS, 
 
 ## Security
 
-Anyone with the URL can read the calendar. Treat it like a password. Press the **Regenerate token** button on the device to invalidate old URLs; the notification is re-issued with new ones.
+Anyone with the URL can read the calendar. Treat it like a password. Use *Configure → Generate a new token* to invalidate the old URLs; the new ones are shown right away.
 
 ## Development
 
@@ -48,4 +48,4 @@ docker compose -f dev/docker-compose.yml up   # HA on :8123 with demo calendars
 
 # iCal Export (PL)
 
-Integracja udostępnia wybrane kalendarze HA jako feedy iCal do subskrypcji w Apple Calendar. Zabezpieczenie: sekretny token w URL (rotacja przyciskiem „Wygeneruj nowy token”). Instalacja przez HACS lub ręczne skopiowanie `custom_components/ical_export`; konfiguracja w *Ustawienia → Urządzenia i usługi*. Adresy URL (`https://` i `webcal://`) pojawią się w powiadomieniu. HA musi być dostępny z internetu (Nabu Casa / reverse proxy z HTTPS) lub przez VPN.
+Integracja udostępnia wybrane kalendarze HA jako feedy iCal do subskrypcji w Apple Calendar. Zabezpieczenie: sekretny token w URL (rotacja w *Konfiguruj → Wygeneruj nowy token*). Instalacja przez HACS lub ręczne skopiowanie `custom_components/ical_export`; konfiguracja w *Ustawienia → Urządzenia i usługi*. Adresy URL (`https://` i `webcal://`) zobaczysz w *Konfiguruj → Pokaż adresy feedów* (tylko admin). HA musi być dostępny z internetu (Nabu Casa / reverse proxy z HTTPS) lub przez VPN.

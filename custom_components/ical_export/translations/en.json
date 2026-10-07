@@ -4,24 +4,44 @@
       "user": {
         "title": "iCal Export",
         "description": "Choose the calendars to publish as one subscribable iCal feed.",
-        "data": { "name": "Feed name", "calendars": "Calendars" }
+        "data": {
+          "name": "Feed name",
+          "calendars": "Calendars"
+        }
       }
     },
-    "error": { "no_calendars": "Select at least one calendar." }
+    "error": {
+      "no_calendars": "Select at least one calendar."
+    }
   },
   "options": {
     "step": {
       "init": {
+        "title": "iCal Export",
+        "menu_options": {
+          "settings": "Calendars and time window",
+          "urls": "Show feed URLs",
+          "regenerate": "Generate a new token"
+        }
+      },
+      "settings": {
         "data": {
           "calendars": "Calendars",
           "past_days": "Days of history",
           "future_days": "Days ahead"
         }
+      },
+      "urls": {
+        "title": "Feed URLs",
+        "description": "Treat these URLs like passwords: anyone who has one can read your calendars.\n\n{urls}"
+      },
+      "regenerate": {
+        "title": "Generate a new token",
+        "description": "This invalidates all current feed URLs. Every subscription must be updated with the new URL."
       }
     },
-    "error": { "no_calendars": "Select at least one calendar." }
-  },
-  "entity": {
-    "button": { "regenerate_token": { "name": "Regenerate token" } }
+    "error": {
+      "no_calendars": "Select at least one calendar."
+    }
   }
 }

@@ -5,13 +5,14 @@ from __future__ import annotations
 from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.typing import ConfigType
 
 from .const import CONF_CALENDARS, CONF_TOKEN, DOMAIN
 from .views import ALL_FEED, ICalFeedView
 
-PLATFORMS = ["button"]
 CONF_ANNOUNCED = "announced"
 
 
@@ -38,25 +39,34 @@ def feed_urls(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, str]:
 
 
 def _announce(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    lines = []
-    for name, url in feed_urls(hass, entry).items():
-        lines.append(f"**{name}**\n\n`{url}`\n\n`{url.replace('https://', 'webcal://', 1)}`")
+    # The URLs contain the secret token and a notification is visible to every user,
+    # so they are only shown in the options flow, which requires an admin.
     persistent_notification.async_create(
         hass,
-        "Add these as subscriptions in Apple Calendar. Treat the URLs like passwords.\n\n"
-        + "\n\n".join(lines),
+        "The feed is ready. Open *Settings → Devices & services → iCal Export → Configure "
+        "→ Show feed URLs* to get the addresses to subscribe to in Apple Calendar.",
         title=f"iCal Export: {entry.title}",
         notification_id=f"{DOMAIN}_{entry.entry_id}",
     )
 
 
+def _remove_legacy_button(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Drop the token-rotation button (and its device) that older versions created."""
+    ent_reg = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
+        ent_reg.async_remove(entity.entity_id)
+    dev_reg = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
+        dev_reg.async_remove_device(device.id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a feed."""
+    _remove_legacy_button(hass, entry)
     if not entry.data.get(CONF_ANNOUNCED):
         _announce(hass, entry)
         # Done before registering the update listener, so no reload is triggered.
         hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_ANNOUNCED: True})
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     return True
 
@@ -67,12 +77,10 @@ async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a feed."""
-    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unloaded:
-        cache = hass.data[DOMAIN]["cache"]
-        for key in [k for k in cache if k[0] == entry.entry_id]:
-            del cache[key]
-    return unloaded
+    cache = hass.data[DOMAIN]["cache"]
+    for key in [k for k in cache if k[0] == entry.entry_id]:
+        del cache[key]
+    return True
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:

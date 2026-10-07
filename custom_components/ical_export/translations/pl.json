@@ -4,24 +4,44 @@
       "user": {
         "title": "iCal Export",
         "description": "Wybierz kalendarze, które mają być udostępnione jako jeden feed iCal do subskrypcji.",
-        "data": { "name": "Nazwa feedu", "calendars": "Kalendarze" }
+        "data": {
+          "name": "Nazwa feedu",
+          "calendars": "Kalendarze"
+        }
       }
     },
-    "error": { "no_calendars": "Wybierz co najmniej jeden kalendarz." }
+    "error": {
+      "no_calendars": "Wybierz co najmniej jeden kalendarz."
+    }
   },
   "options": {
     "step": {
       "init": {
+        "title": "iCal Export",
+        "menu_options": {
+          "settings": "Kalendarze i zakres czasu",
+          "urls": "Pokaż adresy feedów",
+          "regenerate": "Wygeneruj nowy token"
+        }
+      },
+      "settings": {
         "data": {
           "calendars": "Kalendarze",
           "past_days": "Dni wstecz",
           "future_days": "Dni do przodu"
         }
+      },
+      "urls": {
+        "title": "Adresy feedów",
+        "description": "Traktuj te adresy jak hasła: każdy, kto ma któryś z nich, może odczytać Twoje kalendarze.\n\n{urls}"
+      },
+      "regenerate": {
+        "title": "Wygeneruj nowy token",
+        "description": "To unieważni wszystkie obecne adresy feedów. Każdą subskrypcję trzeba będzie zaktualizować nowym adresem."
       }
     },
-    "error": { "no_calendars": "Wybierz co najmniej jeden kalendarz." }
-  },
-  "entity": {
-    "button": { "regenerate_token": { "name": "Wygeneruj nowy token" } }
+    "error": {
+      "no_calendars": "Wybierz co najmniej jeden kalendarz."
+    }
   }
 }

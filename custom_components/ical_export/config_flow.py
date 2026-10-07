@@ -15,6 +15,7 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
+from . import feed_urls
 from .const import (
     CONF_CALENDARS,
     CONF_FUTURE_DAYS,
@@ -76,9 +77,14 @@ class ICalExportConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class ICalExportOptionsFlow(OptionsFlow):
-    """Edit calendars and time window."""
+    """Edit settings, show feed URLs and rotate the token (admin only)."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return self.async_show_menu(step_id="init", menu_options=["settings", "urls", "regenerate"])
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         entry = self.config_entry
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -94,7 +100,7 @@ class ICalExportOptionsFlow(OptionsFlow):
                 )
         current = {**entry.data, **entry.options}
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_CALENDARS, default=current[CONF_CALENDARS]): _CALENDARS,
@@ -110,3 +116,28 @@ class ICalExportOptionsFlow(OptionsFlow):
             ),
             errors=errors,
         )
+
+    async def async_step_urls(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(data=dict(self.config_entry.options))
+        blocks = []
+        for name, url in feed_urls(self.hass, self.config_entry).items():
+            webcal = url.replace("https://", "webcal://", 1)
+            blocks.append(f"**{name}**\n\n`{url}`\n\n`{webcal}`")
+        return self.async_show_form(
+            step_id="urls",
+            data_schema=vol.Schema({}),
+            description_placeholders={"urls": "\n\n".join(blocks)},
+        )
+
+    async def async_step_regenerate(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        if user_input is None:
+            return self.async_show_form(step_id="regenerate", data_schema=vol.Schema({}))
+        # The update listener reloads the entry, which drops the old token for good.
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data={**self.config_entry.data, CONF_TOKEN: secrets.token_urlsafe(32)},
+        )
+        return await self.async_step_urls()

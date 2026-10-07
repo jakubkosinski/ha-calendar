@@ -126,13 +126,33 @@ async def test_token_rotation_invalidates_old_url(
 ):
     entry = await _setup(hass)
     client = await hass_client_no_auth()
-    button = next(s.entity_id for s in hass.states.async_all("button"))
-    await hass.services.async_call("button", "press", {"entity_id": button}, blocking=True)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] == "menu"
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "regenerate"}
+    )
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
-    assert entry.data[CONF_TOKEN] != TOKEN
-    assert (await client.get(f"/api/ical_export/{TOKEN}/all.ics")).status == 404
     new = entry.data[CONF_TOKEN]
+    assert new != TOKEN
+    # The rotation ends on the URL step, which shows the new token.
+    assert result["step_id"] == "urls"
+    assert new in result["description_placeholders"]["urls"]
+    assert (await client.get(f"/api/ical_export/{TOKEN}/all.ics")).status == 404
     assert (await client.get(f"/api/ical_export/{new}/all.ics")).status == 200
+
+
+async def test_notification_does_not_leak_token(hass: HomeAssistant):
+    assert await async_setup_component(hass, "calendar", {})
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_NAME: "Family", CONF_CALENDARS: ["calendar.demo"]}
+    )
+    await hass.async_block_till_done()
+    token = result["data"][CONF_TOKEN]
+    notifications = hass.data["persistent_notification"]
+    assert notifications
+    assert all(token not in n["message"] for n in notifications.values())
 
 
 async def test_config_flow_and_options(hass: HomeAssistant):
@@ -148,6 +168,9 @@ async def test_config_flow_and_options(hass: HomeAssistant):
 
     entry = hass.config_entries.async_entries(DOMAIN)[0]
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         {CONF_CALENDARS: ["calendar.demo"], "past_days": 7, "future_days": 90},
