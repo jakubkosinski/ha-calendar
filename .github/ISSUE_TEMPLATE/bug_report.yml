@@ -1,0 +1,29 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: iCal Export version
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include which calendar integration provides the entity and how you subscribe (macOS/iOS).
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / diagnostics
+      description: Download diagnostics from the integration page (the token is redacted). Never paste feed URLs, they contain the secret token.
+      render: text
