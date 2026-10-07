@@ -33,7 +33,7 @@
       },
       "urls": {
         "title": "Adresy feedów",
-        "description": "Traktuj te adresy jak hasła: każdy, kto ma któryś z nich, może odczytać Twoje kalendarze.\n\n{urls}"
+        "description": "{warning}Traktuj te adresy jak hasła: każdy, kto ma któryś z nich, może odczytać Twoje kalendarze.\n\n{urls}"
       },
       "regenerate": {
         "title": "Wygeneruj nowy token",

@@ -38,6 +38,11 @@ def feed_urls(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, str]:
     return urls
 
 
+def webcal_url(url: str) -> str:
+    """Return the webcal:// form of an http(s) URL."""
+    return "webcal://" + url.split("://", 1)[1]
+
+
 def _announce(hass: HomeAssistant, entry: ConfigEntry) -> None:
     # The URLs contain the secret token and a notification is visible to every user,
     # so they are only shown in the options flow, which requires an admin.

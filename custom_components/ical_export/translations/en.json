@@ -33,7 +33,7 @@
       },
       "urls": {
         "title": "Feed URLs",
-        "description": "Treat these URLs like passwords: anyone who has one can read your calendars.\n\n{urls}"
+        "description": "{warning}Treat these URLs like passwords: anyone who has one can read your calendars.\n\n{urls}"
       },
       "regenerate": {
         "title": "Generate a new token",

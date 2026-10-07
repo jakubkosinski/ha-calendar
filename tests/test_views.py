@@ -177,3 +177,19 @@ async def test_config_flow_and_options(hass: HomeAssistant):
     )
     assert result["type"] == "create_entry"
     assert entry.options["past_days"] == 7
+
+
+async def test_urls_step_warns_on_http(hass: HomeAssistant):
+    entry = await _setup(hass)
+    for base, warned in (("https://ha.example.com", False), ("http://192.168.1.2:8123", True)):
+        with patch("custom_components.ical_export.get_url", return_value=base):
+            result = await hass.config_entries.options.async_init(entry.entry_id)
+            result = await hass.config_entries.options.async_configure(
+                result["flow_id"], {"next_step_id": "urls"}
+            )
+        placeholders = result["description_placeholders"]
+        assert bool(placeholders["warning"]) is warned
+        assert f"webcal://{base.split('://')[1]}/api/ical_export/{TOKEN}/all.ics" in (
+            placeholders["urls"]
+        )
+        hass.config_entries.options.async_abort(result["flow_id"])

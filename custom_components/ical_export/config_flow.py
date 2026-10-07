@@ -15,7 +15,7 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
-from . import feed_urls
+from . import feed_urls, webcal_url
 from .const import (
     CONF_CALENDARS,
     CONF_FUTURE_DAYS,
@@ -25,6 +25,12 @@ from .const import (
     DEFAULT_FUTURE_DAYS,
     DEFAULT_PAST_DAYS,
     DOMAIN,
+)
+
+INSECURE_WARNING = (
+    "**Warning:** these URLs are not HTTPS (or HA's address could not be determined), so "
+    "the secret token would travel unencrypted. Set an HTTPS *External URL* in "
+    "*Settings → System → Network* before subscribing from outside your home network.\n\n"
 )
 
 _CALENDARS = selector.EntitySelector(
@@ -120,14 +126,16 @@ class ICalExportOptionsFlow(OptionsFlow):
     async def async_step_urls(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=dict(self.config_entry.options))
-        blocks = []
-        for name, url in feed_urls(self.hass, self.config_entry).items():
-            webcal = url.replace("https://", "webcal://", 1)
-            blocks.append(f"**{name}**\n\n`{url}`\n\n`{webcal}`")
+        urls = feed_urls(self.hass, self.config_entry)
+        blocks = [f"**{name}**\n\n`{url}`\n\n`{webcal_url(url)}`" for name, url in urls.items()]
+        insecure = not all(url.startswith("https://") for url in urls.values())
         return self.async_show_form(
             step_id="urls",
             data_schema=vol.Schema({}),
-            description_placeholders={"urls": "\n\n".join(blocks)},
+            description_placeholders={
+                "urls": "\n\n".join(blocks),
+                "warning": INSECURE_WARNING if insecure else "",
+            },
         )
 
     async def async_step_regenerate(
