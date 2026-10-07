@@ -1,0 +1,12 @@
+{
+  "domain": "ical_export",
+  "name": "iCal Export",
+  "codeowners": ["@jakubkosinski"],
+  "config_flow": true,
+  "dependencies": ["http", "calendar"],
+  "documentation": "https://github.com/jakubkosinski/ha-calendar",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/jakubkosinski/ha-calendar/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

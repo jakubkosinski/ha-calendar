@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "iCal Export",
+        "description": "Wybierz kalendarze, które mają być udostępnione jako jeden feed iCal do subskrypcji.",
+        "data": { "name": "Nazwa feedu", "calendars": "Kalendarze" }
+      }
+    },
+    "error": { "no_calendars": "Wybierz co najmniej jeden kalendarz." }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "calendars": "Kalendarze",
+          "past_days": "Dni wstecz",
+          "future_days": "Dni do przodu"
+        }
+      }
+    },
+    "error": { "no_calendars": "Wybierz co najmniej jeden kalendarz." }
+  },
+  "entity": {
+    "button": { "regenerate_token": { "name": "Wygeneruj nowy token" } }
+  }
+}

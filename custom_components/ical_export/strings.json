@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "iCal Export",
+        "description": "Choose the calendars to publish as one subscribable iCal feed.",
+        "data": { "name": "Feed name", "calendars": "Calendars" }
+      }
+    },
+    "error": { "no_calendars": "Select at least one calendar." }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "calendars": "Calendars",
+          "past_days": "Days of history",
+          "future_days": "Days ahead"
+        }
+      }
+    },
+    "error": { "no_calendars": "Select at least one calendar." }
+  },
+  "entity": {
+    "button": { "regenerate_token": { "name": "Regenerate token" } }
+  }
+}

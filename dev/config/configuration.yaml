@@ -1,0 +1,6 @@
+default_config:
+demo:
+logger:
+  default: info
+  logs:
+    custom_components.ical_export: debug
