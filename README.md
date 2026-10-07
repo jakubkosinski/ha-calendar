@@ -33,7 +33,13 @@ Your HA must be reachable from the device (Nabu Casa, reverse proxy with HTTPS, 
 
 ## Security
 
-Anyone with the URL can read the calendar. Treat it like a password. Use *Configure → Generate a new token* to invalidate the old URLs; the new ones are shown right away.
+Anyone with the URL can read the calendar. Treat it like a password.
+
+- The token is 256 bits of randomness and is compared in constant time. Wrong tokens and unknown feeds get a plain 404.
+- Because Apple Calendar can't send headers, the token has to be part of the URL path. That means **it also ends up in the access logs of any reverse proxy or CDN in front of HA** and in browser history if you open a feed in a browser. Don't share those logs, and prefer HTTPS so the token isn't sent in clear text.
+- Feed URLs are only shown in *Configure → Show feed URLs*, which requires an admin. They are deliberately not put in notifications or diagnostics.
+- Use *Configure → Generate a new token* to invalidate the old URLs (for example after they leaked). Every subscription then needs the new URL.
+- If a calendar can't be read (e.g. right after a restart), the feed serves the last good copy or answers `503`. It never serves an empty calendar, which would make clients delete your events.
 
 ## Development
 
