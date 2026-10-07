@@ -63,12 +63,22 @@ def _format_dt(value: date | datetime) -> tuple[str, str]:
     return ";VALUE=DATE", value.strftime("%Y%m%d")
 
 
+def _has_control_chars(value: str) -> bool:
+    return any(ord(char) < 0x20 or ord(char) == 0x7F for char in value)
+
+
 def make_uid(event: IcsEvent) -> str:
-    """Stable UID; instances of recurring events get a distinct suffix."""
+    """Stable UID; instances of recurring events get a distinct suffix.
+
+    UIDs come from third-party calendars and are written unescaped, so one holding
+    control characters (e.g. CRLF) is replaced by a hash to prevent injecting lines.
+    """
     if event.uid:
         base = event.uid
         if event.recurrence_id:
             base = f"{base}_{event.recurrence_id}"
+        if _has_control_chars(base):
+            base = hashlib.sha256(base.encode()).hexdigest()[:32]
         return f"{base}@ical_export"
     start = _format_dt(event.start)[1]
     digest = hashlib.sha256(f"{event.source}|{event.summary}|{start}".encode()).hexdigest()[:32]

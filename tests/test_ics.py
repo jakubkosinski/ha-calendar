@@ -57,3 +57,21 @@ def test_uid_stable_and_recurrence_distinct():
     r1 = IcsEvent(NOW, NOW, "x", uid="u", recurrence_id="1")
     r2 = IcsEvent(NOW, NOW, "x", uid="u", recurrence_id="2")
     assert make_uid(r1) != make_uid(r2)
+
+
+def test_uid_with_control_chars_cannot_inject_lines():
+    evil = IcsEvent(
+        start=NOW,
+        end=NOW,
+        summary="x",
+        uid="abc\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nEND:VALARM",
+        recurrence_id="20260101\nX-EVIL:1",
+    )
+    uid = make_uid(evil)
+    assert "\r" not in uid and "\n" not in uid
+
+    body = build_calendar("t", [evil], now=NOW)
+    event = next(c for c in Calendar.from_ical(body).walk("VEVENT"))
+    assert not list(event.walk("VALARM"))
+    assert "X-EVIL" not in event
+    assert "X-EVIL" not in body.replace("\r\n", "")
