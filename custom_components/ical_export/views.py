@@ -103,23 +103,25 @@ async def _render(hass: HomeAssistant, entry: ICalConfigEntry, feed: str) -> tup
         state = hass.states.get(entity_id)
         title = state.name if state else entity_id
 
-    cache = entry.runtime_data.cache
-    cached = cache.get(feed)
-    if cached and time.monotonic() - cached[0] < CACHE_TTL_SECONDS:
-        return cached[1], cached[2]
-
-    results = await asyncio.gather(*(_fetch(hass, entry, e) for e in entity_ids))
-    if any(chunk is None for chunk in results):
-        # An empty or partial feed would make subscribers delete their events, so
-        # serve the last good copy (even if expired) or fail instead.
-        if cached:
+    runtime = entry.runtime_data
+    async with runtime.locks.setdefault(feed, asyncio.Lock()):
+        # Re-check inside the lock: a concurrent request may have just refreshed it.
+        cached = runtime.cache.get(feed)
+        if cached and time.monotonic() - cached[0] < CACHE_TTL_SECONDS:
             return cached[1], cached[2]
-        raise FeedUnavailableError
-    events = [event for chunk in results for event in chunk]
-    body = build_calendar(title, events, REFRESH_MINUTES)
-    etag = f'"{hashlib.sha256(_stable(body).encode()).hexdigest()[:32]}"'
-    cache[feed] = (time.monotonic(), body, etag)
-    return body, etag
+
+        results = await asyncio.gather(*(_fetch(hass, entry, e) for e in entity_ids))
+        if any(chunk is None for chunk in results):
+            # An empty or partial feed would make subscribers delete their events, so
+            # serve the last good copy (even if expired) or fail instead.
+            if cached:
+                return cached[1], cached[2]
+            raise FeedUnavailableError
+        events = [event for chunk in results for event in chunk]
+        body = build_calendar(title, events, REFRESH_MINUTES)
+        etag = f'"{hashlib.sha256(_stable(body).encode()).hexdigest()[:32]}"'
+        runtime.cache[feed] = (time.monotonic(), body, etag)
+        return body, etag
 
 
 def _stable(body: str) -> str:

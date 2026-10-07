@@ -1,5 +1,6 @@
 """Tests for views, config flow and token rotation."""
 
+import asyncio
 from unittest.mock import patch
 
 from homeassistant.components.calendar import DATA_COMPONENT, CalendarEntity, CalendarEvent
@@ -193,3 +194,25 @@ async def test_urls_step_warns_on_http(hass: HomeAssistant):
             placeholders["urls"]
         )
         hass.config_entries.options.async_abort(result["flow_id"])
+
+
+async def test_concurrent_requests_share_one_refresh(
+    hass: HomeAssistant, hass_client_no_auth: ClientSessionGenerator
+):
+    await _setup(hass)
+    client = await hass_client_no_auth()
+    entity = hass.data[DATA_COMPONENT].get_entity("calendar.demo")
+    calls = 0
+
+    async def slow_get_events(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        await asyncio.sleep(0.05)
+        return [_event()]
+
+    with patch.object(type(entity), "async_get_events", side_effect=slow_get_events):
+        responses = await asyncio.gather(
+            *(client.get(f"/api/ical_export/{TOKEN}/all.ics") for _ in range(5))
+        )
+    assert [r.status for r in responses] == [200] * 5
+    assert calls == 1
