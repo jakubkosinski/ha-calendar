@@ -5,6 +5,7 @@ DOMAIN = "ical_export"
 CONF_NAME = "name"
 CONF_CALENDARS = "calendars"
 CONF_TOKEN = "token"
+CONF_ANNOUNCED = "announced"
 CONF_PAST_DAYS = "past_days"
 CONF_FUTURE_DAYS = "future_days"
 

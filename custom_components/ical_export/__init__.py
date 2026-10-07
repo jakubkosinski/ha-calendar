@@ -5,17 +5,18 @@ from __future__ import annotations
 from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.helpers.typing import ConfigType
 
 from .calendars import CONF_SLUG, get_calendars, migrate_calendars
-from .const import CONF_CALENDARS, CONF_TOKEN, DOMAIN
+from .const import CONF_ANNOUNCED, CONF_CALENDARS, CONF_TOKEN, DOMAIN
 from .runtime import FeedRuntime, ICalConfigEntry
 from .views import ALL_FEED, ICalFeedView
 
-CONF_ANNOUNCED = "announced"
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
