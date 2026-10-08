@@ -1,7 +1,7 @@
 # iCal Export for Home Assistant
 
-[![Validate](https://github.com/jakubkosinski/ha-calendar/actions/workflows/validate.yml/badge.svg)](https://github.com/jakubkosinski/ha-calendar/actions/workflows/validate.yml)
-[![Tests](https://github.com/jakubkosinski/ha-calendar/actions/workflows/tests.yml/badge.svg)](https://github.com/jakubkosinski/ha-calendar/actions/workflows/tests.yml)
+[![Validate](https://github.com/jakubkosinski/homeassistant-ical-export/actions/workflows/validate.yml/badge.svg)](https://github.com/jakubkosinski/homeassistant-ical-export/actions/workflows/validate.yml)
+[![Tests](https://github.com/jakubkosinski/homeassistant-ical-export/actions/workflows/tests.yml/badge.svg)](https://github.com/jakubkosinski/homeassistant-ical-export/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Publishes selected Home Assistant `calendar.*` entities as iCal (`.ics`) feeds you can subscribe to in Apple Calendar (macOS and iOS).
@@ -10,7 +10,7 @@ Apple Calendar can't send HA's `Authorization: Bearer` header, so feeds are prot
 
 ## Install
 
-**HACS:** [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jakubkosinski&repository=ha-calendar&category=integration) or add this repository manually as a custom repository (category *Integration*), install, restart HA.
+**HACS:** [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jakubkosinski&repository=homeassistant-ical-export&category=integration) or add this repository manually as a custom repository (category *Integration*), install, restart HA.
 **Manual:** copy `custom_components/ical_export` into your HA `config/custom_components/`.
 
 ## Configure

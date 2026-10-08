@@ -4,9 +4,9 @@
   "codeowners": ["@jakubkosinski"],
   "config_flow": true,
   "dependencies": ["http", "calendar"],
-  "documentation": "https://github.com/jakubkosinski/ha-calendar",
+  "documentation": "https://github.com/jakubkosinski/homeassistant-ical-export",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/jakubkosinski/ha-calendar/issues",
+  "issue_tracker": "https://github.com/jakubkosinski/homeassistant-ical-export/issues",
   "requirements": [],
   "version": "0.2.0"
 }
